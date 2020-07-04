@@ -1,4 +1,4 @@
-const inquirer = require("inquirer");
+const inquirer = require("inquirer-promise");
 const {
   viewEmployees,
   employeeByDept,
@@ -129,77 +129,65 @@ const addEmployee = () => {
   employees = [];
   roles = [];
   return new Promise((resolve, reject) => {
-    loadRoles()
+    viewEmployees()
       .then((res) => {
         res.forEach((element) => {
+          employees.push(element.full_name);
           roles.push(element.title);
         });
       })
       .then(() => {
-        viewEmployees()
+        inquirer
+          .prompt([
+            {
+              name: "fName",
+              type: "input",
+              message: "What is the first name of the employee?",
+            },
+            {
+              name: "lName",
+              type: "input",
+              message: "What is the last name of the employee?",
+            },
+            {
+              name: "role",
+              type: "list",
+              message: "What is the role of the employee?",
+              choices: roles,
+            },
+            {
+              name: "manager",
+              type: "list",
+              message: "What is the name of the manager?",
+              choices: employees,
+            },
+          ])
           .then((res) => {
-            res.forEach((el) => {
-              employees.push(el.full_name);
-            });
-          })
-          .then(() => {
-            inquirer
-              .prompt([
-                {
-                  name: "fName",
-                  type: "input",
-                  message: "What is the first name of the employee?",
-                },
-                {
-                  name: "lName",
-                  type: "input",
-                  message: "What is the last name of the employee?",
-                },
-                {
-                  name: "role",
-                  type: "list",
-                  message: "What is the role of the employee?",
-                  choices: roles,
-                },
-                {
-                  name: "manager",
-                  type: "list",
-                  message: "What is the name of the manager?",
-                  choices: employees,
-                },
-              ])
-              .then((res) => {
-                viewEmployees()
-                  .then((data) => {
-                    data.forEach((element) => {
-                      if (res.role === element.title) {
-                        roleID = element.role_id;
-                      }
-                      if (res.manager === element.full_name) {
-                        managerID = element.id;
-                      } else if (res.manager === "None") {
-                        managerID = null;
-                      }
-                    });
-                  })
-                  .then(() => {
-                    newEmployee = {
-                      first_name: res.fName,
-                      last_name: res.lName,
-                      role_id: roleID,
-                      manager_id: managerID,
-                    };
-                    return newEmployee;
-                  })
-                  .then((obj) => {
-                    addNewEmployee(obj).then((resp) => resolve(resp));
-                  });
+            viewEmployees()
+              .then((data) => {
+                data.forEach((element) => {
+                  if (res.role === element.title) {
+                    roleID = element.role_id;
+                  }
+                  if (res.manager === element.full_name) {
+                    managerID = element.id;
+                  } else if (res.manager === "None") {
+                    managerID = null;
+                  }
+                });
+              })
+              .then(() => {
+                newEmployee = {
+                  first_name: res.fName,
+                  last_name: res.lName,
+                  role_id: roleID,
+                  manager_id: managerID,
+                };
+                addNewEmployee(newEmployee).then((resp) => resolve(resp));
               });
           });
       })
-      .catch((err) => {
-        if (err) reject(err);
-      });
+      .catch((err) => reject(err));
   });
 };
 
@@ -207,60 +195,51 @@ const updateRole = () => {
   employees = [];
   roles = [];
   return new Promise((resolve, reject) => {
-    loadRoles()
+    viewEmployees()
       .then((res) => {
         res.forEach((element) => {
           roles.push(element.title);
+          employees.push(element.full_name);
         });
       })
       .then(() => {
-        viewEmployees()
-          .then((res) => {
-            res.forEach((el) => {
-              employees.push(el.full_name);
-            });
-          })
-          .then(() => {
-            inquirer
-              .prompt([
-                {
-                  name: "employee",
-                  type: "list",
-                  message: "Which employee's role you want to update?",
-                  choices: employees,
-                },
-                {
-                  name: "role",
-                  type: "list",
-                  message: "What is the new role of the employee?",
-                  choices: roles,
-                },
-              ])
-              .then((res) => {
-                viewEmployees()
-                  .then((data) => {
-                    data.forEach((element) => {
-                      if (res.role === element.title) {
-                        roleID = element.role_id;
-                      }
-                      if (res.employee === element.full_name) {
-                        employeeID = element.id;
-                      } else if (res.manager === "None") {
-                        employeeID = null;
-                      }
-                    });
-                  })
-                  .then(() => {
-                    updateEmployeeRole(employeeID, roleID).then((resp) =>
-                      resolve(resp)
-                    );
-                  });
+        inquirer
+          .prompt([
+            {
+              name: "employee",
+              type: "list",
+              message: "Which employee's role you want to update?",
+              choices: employees,
+            },
+            {
+              name: "role",
+              type: "list",
+              message: "What is the new role of the employee?",
+              choices: roles,
+            },
+          ])
+          .then((inqdata) => {
+            viewEmployees()
+              .then((data) => {
+                data.forEach((element) => {
+                  if (inqdata.role === element.title) {
+                    roleID = element.role_id;
+                  }
+                  if (inqdata.employee === element.full_name) {
+                    employeeID = element.id;
+                  } else if (inqdata.manager === "None") {
+                    employeeID = null;
+                  }
+                });
+              })
+              .then(() => {
+                updateEmployeeRole(employeeID, roleID).then((resp) =>
+                  resolve(resp)
+                );
               });
           });
       })
-      .catch((err) => {
-        if (err) reject(err);
-      });
+      .catch((err) => reject(err));
   });
 };
 
